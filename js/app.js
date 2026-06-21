@@ -182,7 +182,7 @@
             <div><h2>Gallery</h2><div class="gallery-grid mt-4">${d.gallery_images.map((img, i) => `<img src="${VE.esc(img)}" alt="Gallery ${i + 1}" loading="lazy">`).join("")}</div></div>
           </div>
           <div class="space-y-6">
-            <div class="card sidebar-card"><div class="card-body space-y-4">
+            <div class="card sidebar-card"><div class="card-body space-y-4>
               <div style="display:flex;gap:0.75rem">${VE.ICONS.calendar}<div><p class="text-sm" style="font-weight:500">Best Time to Visit</p><p class="text-sm text-muted">${VE.esc(d.best_time)}</p></div></div>
               <div style="display:flex;gap:0.75rem">${VE.ICONS.mapPin}<div><p class="text-sm" style="font-weight:500">Location</p><p class="text-sm text-muted">${VE.esc(d.region)}, ${VE.esc(d.country)}</p></div></div>
               ${d.map_url ? `<a href="${VE.esc(d.map_url)}" target="_blank" rel="noopener" class="btn btn-outline btn-full">View on Map</a>` : ""}
@@ -295,6 +295,7 @@
     const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
 
     function renderFilters() {
+      if (!filtersEl) return; // gracefully handle pages without a filters container
       filtersEl.innerHTML = `<button class="filter-pill active" data-filter="all">All</button>` +
         destNames.map((n) => `<button class="filter-pill" data-filter="${VE.esc(n)}">${VE.esc(n)}</button>`).join("");
       filtersEl.querySelectorAll(".filter-pill").forEach((btn) => {
@@ -399,5 +400,7 @@
     renderPackageDetail,
     renderGallery,
     initTravelPlanForm,
+    // back-compat alias used by some pages
+    initTravelPlan: initTravelPlanForm,
   };
 })();
