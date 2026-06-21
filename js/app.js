@@ -38,6 +38,7 @@
   function renderFeaturedPackages() {
     const el = document.getElementById("featured-packages");
     if (!el || !window.VE_DATA) return;
+    const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
     const pkgs = VE_DATA.packages.filter((p) => p.is_featured).slice(0, 6);
     el.innerHTML = pkgs
       .map(
@@ -54,7 +55,7 @@
             ${VE.ICONS.users} Max ${pkg.max_travelers}</div>
           <div class="flex-between mt-4">
             <span class="price">${VE.formatPrice(pkg.price_per_person)}<small> /person</small></span>
-            <a href="package.html?slug=${VE.esc(pkg.slug)}" class="link-arrow">View Details ${VE.ICONS.arrowRight}</a>
+            <a href="${base}packages/package/?slug=${VE.esc(pkg.slug)}" class="link-arrow">View Details ${VE.ICONS.arrowRight}</a>
           </div>
         </div>
       </div>`
@@ -65,6 +66,7 @@
   function renderPopularDestinations() {
     const el = document.getElementById("popular-destinations");
     if (!el || !window.VE_DATA) return;
+    const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
     const dests = VE_DATA.destinations.filter((d) => d.is_popular).slice(0, 6);
     el.innerHTML = dests
       .map(
@@ -74,7 +76,7 @@
         <div class="card-body">
           <h3>${VE.esc(d.name)}</h3>
           <p class="text-muted text-sm line-clamp-2 mt-2">${VE.esc(d.tagline)}</p>
-          <a href="destination.html?slug=${VE.esc(d.slug)}" class="link-arrow">Explore ${VE.ICONS.arrowRight}</a>
+          <a href="${base}destination/?slug=${VE.esc(d.slug)}" class="link-arrow">Explore ${VE.ICONS.arrowRight}</a>
         </div>
       </div>`
       )
@@ -102,10 +104,11 @@
   function renderDestinationsList() {
     const el = document.getElementById("destinations-list");
     if (!el || !window.VE_DATA) return;
+    const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
     el.innerHTML = VE_DATA.destinations
       .map(
         (d) => `
-      <a href="destination.html?slug=${VE.esc(d.slug)}" class="card dest-card">
+      <a href="${base}destination/?slug=${VE.esc(d.slug)}" class="card dest-card">
         <div class="img-wrap"><img src="${VE.esc(d.hero_image)}" alt="${VE.esc(d.name)}" loading="lazy"></div>
         <div class="card-body">
           <div class="text-sm text-muted" style="display:flex;align-items:center;gap:0.25rem;margin-bottom:0.5rem">${VE.ICONS.mapPin.replace('width="24"','width="12"').replace('height="24"','height="12"')} ${VE.esc(d.country)}</div>
@@ -151,9 +154,11 @@
     if (!el || !slug || !window.VE_DATA) return;
     const d = VE_DATA.destinations.find((x) => x.slug === slug);
     if (!d) {
-      el.innerHTML = "<div class='container section text-center'><h2>Destination not found</h2><a href='destinations.html' class='btn btn-primary mt-4'>Back to Destinations</a></div>";
+      const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
+      el.innerHTML = "<div class='container section text-center'><h2>Destination not found</h2><a href='"+base+"destinations/' class='btn btn-primary mt-4'>Back to Destinations</a></div>";
       return;
     }
+    const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
     document.title = `${d.name} — ${VE_CONFIG.brand.full}`;
 
     el.innerHTML = `
@@ -161,7 +166,7 @@
         <img src="${VE.esc(d.hero_image)}" alt="${VE.esc(d.name)}">
         <div class="overlay-bottom"></div>
         <div class="content">
-          <a href="destinations.html" class="back-link">${VE.ICONS.arrowLeft} Back to Destinations</a>
+          <a href="${base}destinations/" class="back-link">${VE.ICONS.arrowLeft} Back to Destinations</a>
           <div class="text-sm" style="color:rgba(255,255,255,0.8);display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">${VE.ICONS.mapPin} ${VE.esc(d.country)} — ${VE.esc(d.region)}</div>
           <h1 style="font-size:2rem">${VE.esc(d.name)}</h1>
           ${d.tagline ? `<p style="margin-top:0.5rem;font-size:1.125rem;color:rgba(255,255,255,0.9)">${VE.esc(d.tagline)}</p>` : ""}
@@ -185,7 +190,7 @@
             <div class="card card-flat"><div class="card-body text-center">
               <h3>Ready to Visit ${VE.esc(d.name)}?</h3>
               <p class="text-sm text-muted mt-2">Explore our curated packages for this destination</p>
-              <a href="packages.html" class="btn btn-primary btn-full mt-4">View Packages</a>
+              <a href="${base}packages/" class="btn btn-primary btn-full mt-4">View Packages</a>
             </div></div>
           </div>
         </div>
@@ -198,9 +203,11 @@
     if (!el || !slug || !window.VE_DATA) return;
     const pkg = VE_DATA.packages.find((x) => x.slug === slug);
     if (!pkg) {
-      el.innerHTML = "<div class='container section text-center'><h2>Package not found</h2><a href='packages.html' class='btn btn-primary mt-4'>Back to Packages</a></div>";
+      const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
+      el.innerHTML = "<div class='container section text-center'><h2>Package not found</h2><a href='"+base+"packages/' class='btn btn-primary mt-4'>Back to Packages</a></div>";
       return;
     }
+    const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
     document.title = `${pkg.name} — ${VE_CONFIG.brand.full}`;
     const waText = encodeURIComponent(`Hi, I'm interested in the ${pkg.name} package. Can you share more details?`);
 

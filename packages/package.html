@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <title>Redirecting…</title>
+  <!-- noscript fallback -> goes to folder without query -->
+  <meta http-equiv="refresh" content="0;url=/packages/package/">
+  <script>
+    // Preserve query string when redirecting legacy URLs like /packages/package.html?slug=...
+    (function(){
+      try {
+        var qs = window.location.search || '';
+        var target = '/packages/package/' + qs;
+        location.replace(target);
+      } catch(e) {
+        location.replace('/packages/package/');
+      }
+    })();
+  </script>
+</head>
+<body>
+  Redirecting to <a id="link" href="/packages/package/">/packages/package/</a>
+  <script>document.getElementById('link').href = '/packages/package/' + (location.search||'');</script>
+</body>
+</html>

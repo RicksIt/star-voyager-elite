@@ -147,7 +147,8 @@
         const modal = document.getElementById("enquiry-modal");
         if (modal) modal.classList.remove("open");
         if (formEl.dataset.redirect === "thank-you") {
-          window.location.href = "thank-you.html";
+          const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
+          window.location.href = base + 'thank-you/';
         }
       } catch (err) {
         VE.showToast(err.message || "Something went wrong. Please try again.", true);

@@ -157,5 +157,5 @@
     setTimeout(() => toast.classList.remove("show"), 4000);
   }
 
-  window.VE = { ICONS, esc, formatPrice, getQueryParam, initLayout, showToast, NAV };
+  window.VE = { ICONS, esc, formatPrice, getQueryParam, initLayout, showToast, NAV, getBasePath };
 })();
