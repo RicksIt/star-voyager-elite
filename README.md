@@ -100,26 +100,38 @@ For seamless in-page submission without redirect, use `provider: "google-post"` 
 
 ```
 voyager-elite-static/
-├── index.html              # Homepage
-├── destinations.html       # All destinations
-├── destination.html        # Single destination (?slug=goa)
-├── packages.html           # All packages
-├── package.html            # Single package (?slug=...)
-├── travel-plan.html        # Custom trip planner
-├── gallery.html            # Photo gallery
-├── about.html              # About us
-├── contact.html            # Contact page
-├── thank-you.html          # Post-submission page
+├── index.html              # Homepage (root)
+├── about/                  # About page (index.html inside)
+├── contact/                # Contact page (index.html inside)
+├── destinations/           # Destinations list (index.html)
+├── destination/            # Single destination (index.html reads ?slug=...)
+├── packages/               # Packages list (index.html)
+├── package/                # Package detail (index.html reads ?slug=...) — canonical detail page
+├── travel-plan/            # Custom trip planner (index.html)
+├── gallery/                # Photo gallery (index.html)
+├── thank-you/              # Post-submission page (index.html)
 ├── css/styles.css          # All styles
 ├── js/
 │   ├── config.js           # Site config & form URLs
 │   ├── data.js             # Destinations, packages, gallery
-│   ├── layout.js           # Header & footer
-│   ├── forms.js            # Form submission logic
-│   └── app.js              # Page rendering & interactions
-├── images/                 # Local hero images (4 JPGs)
+│   ├── layout.js           # Header & footer, exports getBasePath()
+│   ├── forms.js            # Form submission logic (redirects to /thank-you/)
+│   └── app.js              # Page rendering & interactions (uses folder-based URLs)
+├── images/                 # Local images
 └── .nojekyll               # GitHub Pages config
 ```
+
+Notes about folder-based URLs and redirects
+
+- The site now uses folder-based URLs (e.g. `/packages/`, `/package/?slug=...`, `/destination/?slug=...`). This improves aesthetics and works well with GitHub Pages.
+- `js/layout.js` exposes `VE.getBasePath()` which computes the correct base for GitHub Pages project sites (e.g. `/repo-name/`) so all scripts generate correct links.
+- Legacy `*.html` URLs were supported via small redirect pages during migration. The canonical detail page is now `/package/?slug=...`. I removed duplicate nested folders so there should be no redundant `/packages/package/` paths.
+- I scanned the JS code and replaced hardcoded `.html` links with folder-based URLs and base-aware hrefs. Keep an eye on any external hardcoded links you might have in other documentation.
+
+Cleanup notes
+
+- If you prefer to retain legacy redirect files (e.g. `package.html`) for older links, you can keep them; otherwise they have been removed to avoid duplicates.
+- After changes, run a local server and test deep links (e.g. `/package/?slug=kodaikanal-lake-retreat`) and any old `.html` links to ensure everything works as expected.
 
 ---
 

@@ -55,7 +55,7 @@
             ${VE.ICONS.users} Max ${pkg.max_travelers}</div>
           <div class="flex-between mt-4">
             <span class="price">${VE.formatPrice(pkg.price_per_person)}<small> /person</small></span>
-            <a href="${base}packages/package/?slug=${VE.esc(pkg.slug)}" class="link-arrow">View Details ${VE.ICONS.arrowRight}</a>
+            <a href="${base}package/?slug=${VE.esc(pkg.slug)}" class="link-arrow">View Details ${VE.ICONS.arrowRight}</a>
           </div>
         </div>
       </div>`
@@ -124,6 +124,7 @@
   function renderPackagesList() {
     const el = document.getElementById("packages-list");
     if (!el || !window.VE_DATA) return;
+    const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
     el.innerHTML = VE_DATA.packages
       .map(
         (pkg) => `
@@ -140,7 +141,7 @@
             ${VE.ICONS.users} Max ${pkg.max_travelers}</div>
           <div class="flex-between mt-4">
             <span class="price" style="font-size:1.25rem">${VE.formatPrice(pkg.price_per_person)}<small> /person</small></span>
-            <a href="package.html?slug=${VE.esc(pkg.slug)}" class="btn btn-primary btn-rounded text-sm">Details ${VE.ICONS.arrowRight}</a>
+            <a href="${base}package/?slug=${VE.esc(pkg.slug)}" class="btn btn-primary btn-rounded text-sm">Details ${VE.ICONS.arrowRight}</a>
           </div>
         </div>
       </div>`
@@ -216,7 +217,7 @@
         <img src="${VE.esc(pkg.hero_image)}" alt="${VE.esc(pkg.name)}">
         <div class="overlay-bottom"></div>
         <div class="content">
-          <a href="packages.html" class="back-link">${VE.ICONS.arrowLeft} Back to Packages</a>
+          <a href="${base}packages/" class="back-link">${VE.ICONS.arrowLeft} Back to Packages</a>
           <h1 style="font-size:2rem">${VE.esc(pkg.name)}</h1>
           ${pkg.tagline ? `<p style="margin-top:0.5rem;font-size:1.125rem;color:rgba(255,255,255,0.9)">${VE.esc(pkg.tagline)}</p>` : ""}
           <div style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:1rem;font-size:0.875rem;color:rgba(255,255,255,0.8)">
@@ -291,6 +292,7 @@
 
     const destNames = [...new Set(VE_DATA.gallery.map((g) => g.destination_name))].sort();
     let filter = "all";
+    const base = (window.VE && typeof VE.getBasePath === 'function') ? VE.getBasePath() : '/';
 
     function renderFilters() {
       filtersEl.innerHTML = `<button class="filter-pill active" data-filter="all">All</button>` +
@@ -310,7 +312,7 @@
       el.innerHTML = items
         .map(
           (item, i) => `
-        <a href="destination.html?slug=${VE.esc(item.destination_slug)}" class="masonry-item" style="aspect-ratio:${i % 3 === 0 ? "4/5" : i % 3 === 1 ? "4/3" : "1/1"}">
+        <a href="${base}destination/?slug=${VE.esc(item.destination_slug)}" class="masonry-item" style="aspect-ratio:${i % 3 === 0 ? "4/5" : i % 3 === 1 ? "4/3" : "1/1"}">
           <img src="${VE.esc(item.image_url)}" alt="${VE.esc(item.title)}" loading="lazy">
           <div class="caption"><p class="text-sm">${VE.esc(item.title)}</p><p class="text-sm" style="opacity:0.8;margin-top:0.25rem">${VE.ICONS.mapPin.replace('width="24"','width="12"').replace('height="24"','height="12"')} ${VE.esc(item.destination_name)}</p></div>
         </a>`
