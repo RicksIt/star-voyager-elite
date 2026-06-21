@@ -329,15 +329,47 @@
     const form = document.getElementById("travel-plan-form");
     if (!form) return;
 
+    // Populate source country/city and destination selects from VE_DATA
+    try {
+      if (window.VE_DATA && Array.isArray(VE_DATA.destinations)) {
+        const countries = Array.from(new Set(VE_DATA.destinations.map(d => d.country))).sort();
+        const countryEl = document.getElementById('source-country');
+        const cityEl = document.getElementById('source-city');
+        const addDestOption = (select) => {
+          // clear except first
+          while (select.options.length > 1) select.remove(1);
+          VE_DATA.destinations.forEach(d => select.appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
+        };
+        if (countryEl) {
+          countries.forEach(c => countryEl.appendChild(new Option(c, c)));
+          countryEl.addEventListener('change', () => {
+            // filter cities by country
+            while (cityEl.options.length > 1) cityEl.remove(1);
+            VE_DATA.destinations.filter(d => d.country === countryEl.value).forEach(d => cityEl.appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
+          });
+        }
+        if (cityEl) {
+          addDestOption(cityEl);
+        }
+
+        // populate first destination select
+        document.querySelectorAll('.destination-select').forEach(sel => addDestOption(sel));
+      }
+    } catch (e) { console.error(e); }
+
     const destContainer = document.getElementById("destinations-list-input");
-    let destCount = 1;
+    let destCount = destContainer ? destContainer.querySelectorAll('[name="destination"]').length : 1;
 
     document.getElementById("add-destination")?.addEventListener("click", () => {
       destCount++;
       const div = document.createElement("div");
       div.className = "form-group";
-      div.innerHTML = `<label>Destination ${destCount}</label><input name="destination" placeholder="City or region">`;
+      div.innerHTML = `<label>Destination ${destCount}</label><select name="destination" class="destination-select"><option value="">Select destination</option></select>`;
       destContainer.appendChild(div);
+      // populate new select
+      try { if (window.VE_DATA && Array.isArray(VE_DATA.destinations)) {
+        VE_DATA.destinations.forEach(d => div.querySelector('select').appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
+      }} catch(e){console.error(e);}
     });
 
     form.addEventListener("submit", async (e) => {
@@ -367,7 +399,7 @@
           name: fd.get("name"),
           email: fd.get("email"),
           phone: fd.get("phone") || "",
-          from_location: fd.get("from_location"),
+          from_location: fd.get("from_location") || (document.getElementById('source-city') && document.getElementById('source-city').value) || "",
           destinations,
           start_date: fd.get("start_date") || "",
           end_date: fd.get("end_date") || "",

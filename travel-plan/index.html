@@ -11,11 +11,6 @@
 <body>
   <div id="site-header"></div>
 
-  <!-- Diagnostic banner (shows JS/asset status) -->
-  <div id="diag-banner" style="background:#111;color:#fff;padding:0.5rem 1rem;font-family:system-ui,Arial,Helvetica,sans-serif;font-size:0.9rem;">
-    <strong>Diagnostics:</strong> Running...
-  </div>
-
   <main>
     <section class="section"><div class="container"><h2>Plan Your Trip</h2>
       <div id="travel-plan-content">
@@ -24,10 +19,16 @@
             <div class="form-group"><label>Full Name *</label><input name="name" required placeholder="Your name"></div>
             <div class="form-group"><label>Phone</label><input name="phone" type="tel" placeholder="Your phone"></div>
           </div>
+
           <div class="form-group"><label>Email *</label><input name="email" type="email" required placeholder="your@email.com"></div>
-          <div class="form-group"><label>From</label><input name="from_location" placeholder="City or region"></div>
+
+          <div class="grid-2">
+            <div class="form-group"><label>Source Country</label><select id="source-country"><option value="">Select country</option></select></div>
+            <div class="form-group"><label>Source City / Place</label><select id="source-city"><option value="">Select city</option></select></div>
+          </div>
+
           <div id="destinations-list-input">
-            <div class="form-group"><label>Destination 1</label><input name="destination" placeholder="City or region"></div>
+            <div class="form-group"><label>Destination 1</label><select name="destination" class="destination-select"><option value="">Select destination</option></select></div>
           </div>
           <div style="display:flex;gap:0.5rem;align-items:center"><button type="button" id="add-destination" class="btn btn-outline">Add destination</button></div>
 
@@ -68,35 +69,9 @@
   <script src="../js/forms.js"></script>
   <script src="../js/app.js"></script>
   <script>
-    // diagnostics: prints status into #diag-banner
-    (function(){
-      function set(msg, isError){
-        var b = document.getElementById('diag-banner');
-        if(!b) return;
-        b.innerHTML = '<strong>Diagnostics:</strong> ' + msg;
-        if(isError) b.style.background = '#6a1b1b';
-      }
-      try{
-        var msgs = [];
-        msgs.push('VE=' + (typeof VE !== 'undefined'));
-        msgs.push('VE_DATA=' + (typeof VE_DATA !== 'undefined'));
-        msgs.push('VE_APP=' + (typeof VE_APP !== 'undefined'));
-        msgs.push('travel-plan-form=' + (!!document.getElementById('travel-plan-form')));
-        set(msgs.join(' | '));
-
-        var files = ['../js/config.js','../js/data.js','../js/layout.js','../js/forms.js','../js/app.js','../css/styles.css'];
-        Promise.all(files.map(function(f){
-          return fetch(f, {method:'HEAD'}).then(function(r){ return f + ':' + r.status; }).catch(function(e){ return f + ':ERR'; });
-        })).then(function(results){
-          set(msgs.join(' | ') + ' | ' + results.join(' | '));
-        }).catch(function(){ /* ignore */ });
-
-        window.addEventListener('error', function(e){ set('Runtime error: ' + e.message, true); });
-      }catch(e){ set('Diag failed: ' + e.message, true); }
-
-      try{ VE.initLayout('travel-plan'); }catch(e){}
-      try{ if(window.VE_APP && typeof VE_APP.initTravelPlan === 'function') VE_APP.initTravelPlan(); }catch(e){}
-    })();
+    VE.initLayout("travel-plan");
+    // initTravelPlan alias calls the updated initTravelPlanForm in app.js
+    try{ VE_APP.initTravelPlan(); }catch(e){console.error(e);}  
   </script>
 
   <div id="toast"></div>
