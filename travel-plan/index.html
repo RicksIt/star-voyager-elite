@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plan Your Trip — Voyager Elite Travel Agency</title>
   <meta name="description" content="Share your travel plans and we'll craft a personalised itinerary.">
@@ -10,6 +10,12 @@
 </head>
 <body>
   <div id="site-header"></div>
+
+  <!-- Diagnostic banner (shows JS/asset status) -->
+  <div id="diag-banner" style="background:#111;color:#fff;padding:0.5rem 1rem;font-family:system-ui,Arial,Helvetica,sans-serif;font-size:0.9rem;">
+    <strong>Diagnostics:</strong> Running...
+  </div>
+
   <main>
     <section class="section"><div class="container"><h2>Plan Your Trip</h2>
       <div id="travel-plan-content">
@@ -62,8 +68,35 @@
   <script src="../js/forms.js"></script>
   <script src="../js/app.js"></script>
   <script>
-    VE.initLayout("travel-plan");
-    VE_APP.initTravelPlan();
+    // diagnostics: prints status into #diag-banner
+    (function(){
+      function set(msg, isError){
+        var b = document.getElementById('diag-banner');
+        if(!b) return;
+        b.innerHTML = '<strong>Diagnostics:</strong> ' + msg;
+        if(isError) b.style.background = '#6a1b1b';
+      }
+      try{
+        var msgs = [];
+        msgs.push('VE=' + (typeof VE !== 'undefined'));
+        msgs.push('VE_DATA=' + (typeof VE_DATA !== 'undefined'));
+        msgs.push('VE_APP=' + (typeof VE_APP !== 'undefined'));
+        msgs.push('travel-plan-form=' + (!!document.getElementById('travel-plan-form')));
+        set(msgs.join(' | '));
+
+        var files = ['../js/config.js','../js/data.js','../js/layout.js','../js/forms.js','../js/app.js','../css/styles.css'];
+        Promise.all(files.map(function(f){
+          return fetch(f, {method:'HEAD'}).then(function(r){ return f + ':' + r.status; }).catch(function(e){ return f + ':ERR'; });
+        })).then(function(results){
+          set(msgs.join(' | ') + ' | ' + results.join(' | '));
+        }).catch(function(){ /* ignore */ });
+
+        window.addEventListener('error', function(e){ set('Runtime error: ' + e.message, true); });
+      }catch(e){ set('Diag failed: ' + e.message, true); }
+
+      try{ VE.initLayout('travel-plan'); }catch(e){}
+      try{ if(window.VE_APP && typeof VE_APP.initTravelPlan === 'function') VE_APP.initTravelPlan(); }catch(e){}
+    })();
   </script>
 
   <div id="toast"></div>
