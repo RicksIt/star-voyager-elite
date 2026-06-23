@@ -527,11 +527,11 @@ try {
     renderDestinationDetail,
     renderPackageDetail,
     renderGallery,
-    initTravelPlanForm,
-    // back-compat alias used by some pages
-    initTravelPlan: initTravelPlanForm,
+    // new initializers
     initPlanTripForm,
     initTransportBookingForm,
+    // back-compat aliases
+    initTravelPlan: initPlanTripForm,
   };
 })();
 } catch (e) {
@@ -556,3 +556,6 @@ try {
     }
   } catch (ee) { console.error('Overlay render failed', ee); }
 }
+
+// ensure a safe VE_APP exists early for legacy inline calls
+if (typeof window !== 'undefined') window.VE_APP = window.VE_APP || {};
