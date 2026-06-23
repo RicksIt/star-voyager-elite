@@ -13,8 +13,49 @@
 
   <main>
     <section class="section"><div class="container"><h2>Plan Your Trip</h2>
+
+      <!-- Toggle between forms -->
+      <div class="form-toggle" style="display:flex;gap:1rem;align-items:center;margin:1rem 0">
+        <label style="display:flex;align-items:center;gap:0.5rem"><input type="radio" name="plan-type" value="plan" id="toggle-plan" checked> Plan Your Trip</label>
+        <label style="display:flex;align-items:center;gap:0.5rem"><input type="radio" name="plan-type" value="transport" id="toggle-transport"> Transport Booking</label>
+      </div>
+
       <div id="travel-plan-content">
-        <form id="travel-plan-form" class="space-y-4">
+
+        <!-- PLAN YOUR TRIP (original) -->
+        <form id="plan-trip-form" class="space-y-4">
+          <div class="form-row">
+            <div class="form-group"><label>Full Name *</label><input name="name" required placeholder="Your name"></div>
+            <div class="form-group"><label>Phone</label><input name="phone" type="tel" placeholder="Your phone"></div>
+          </div>
+
+          <div class="form-group"><label>Email *</label><input name="email" type="email" required placeholder="your@email.com"></div>
+
+          <div id="destinations-list-input">
+            <div class="form-group"><label>Destination 1</label>
+              <select name="destination" class="destination-select"><option value="">Select destination</option></select>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button type="button" id="add-destination" class="btn btn-outline">Add Destination</button>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group"><label>Total Travelers</label><input name="num_travelers" type="number" min="1" placeholder="Number"></div>
+            <div class="form-group"><label>Budget per person</label><input name="budget" type="text" placeholder="e.g. 20000"></div>
+          </div>
+
+          <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" placeholder="Any overall requirements..."></textarea></div>
+
+          <div style="display:flex;gap:0.5rem"><button type="submit" class="btn btn-primary">Submit Request</button></div>
+        </form>
+
+        <hr style="margin:2rem 0">
+
+        <!-- TRANSPORT BOOKING (new) -->
+        <h3>Transport Booking</h3>
+        <form id="transport-booking-form" class="space-y-4">
           <div class="form-row">
             <div class="form-group"><label>Full Name *</label><input name="name" required placeholder="Your name"></div>
             <div class="form-group"><label>Phone</label><input name="phone" type="tel" placeholder="Your phone"></div>
@@ -37,12 +78,17 @@
 
           <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" placeholder="Any overall requirements..."></textarea></div>
 
-          <div style="display:flex;gap:0.5rem"><button type="submit" class="btn btn-primary">Submit Request</button></div>
+          <div style="display:flex;gap:0.5rem"><button type="submit" class="btn btn-primary">Submit Transport Booking</button></div>
         </form>
+
       </div>
 
-      <div id="travel-plan-success" class="hidden">
-        <div class="card"><div class="card-body text-center"><h3>Thanks — we'll be in touch</h3><p class="text-sm text-muted">Your custom trip request has been received.</p></div></div>
+      <div id="plan-trip-success" class="hidden">
+        <div class="card"><div class="card-body text-center"><h3>Thanks — we'll be in touch</h3><p class="text-sm text-muted">Your trip request has been received.</p></div></div>
+      </div>
+
+      <div id="transport-success" class="hidden">
+        <div class="card"><div class="card-body text-center"><h3>Transport Booking Received</h3><p class="text-sm text-muted">We'll contact you shortly about your transport booking.</p></div></div>
       </div>
 
     </div></section>
@@ -55,7 +101,33 @@
   <script src="../js/app.js"></script>
   <script>
     VE.initLayout("travel-plan");
-    try{ VE_APP.initTravelPlan(); }catch(e){console.error(e);}  
+    try{ VE_APP.initPlanTripForm(); }catch(e){console.error(e);}  
+    try{ VE_APP.initTransportBookingForm(); }catch(e){console.error(e);}  
+
+    // Toggle logic: show only selected form
+    function switchForms(val) {
+      const planForm = document.getElementById('plan-trip-form');
+      const transportForm = document.getElementById('transport-booking-form');
+      const planSuccess = document.getElementById('plan-trip-success');
+      const transportSuccess = document.getElementById('transport-success');
+      if (val === 'plan') {
+        if (planForm) planForm.style.display = '';
+        if (transportForm) transportForm.style.display = 'none';
+        if (planSuccess) planSuccess.style.display = 'none';
+        if (transportSuccess) transportSuccess.style.display = 'none';
+      } else {
+        if (planForm) planForm.style.display = 'none';
+        if (transportForm) transportForm.style.display = '';
+        if (planSuccess) planSuccess.style.display = 'none';
+        if (transportSuccess) transportSuccess.style.display = 'none';
+      }
+    }
+
+    document.getElementById('toggle-plan')?.addEventListener('change', (e) => { if (e.target.checked) switchForms('plan'); });
+    document.getElementById('toggle-transport')?.addEventListener('change', (e) => { if (e.target.checked) switchForms('transport'); });
+
+    // initial state
+    switchForms('plan');
   </script>
 
   <div id="toast"></div>

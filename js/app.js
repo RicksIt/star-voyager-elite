@@ -325,102 +325,79 @@
     renderItems();
   }
 
-  function initTravelPlanForm() {
-    const form = document.getElementById("travel-plan-form");
+  function initPlanTripForm() {
+    const form = document.getElementById("plan-trip-form");
     if (!form) return;
+
+    // Populate destination selects as before
+    try {
+      if (window.VE_DATA && Array.isArray(VE_DATA.destinations)) {
+        const addDestOption = (select) => {
+          while (select.options.length > 1) select.remove(1);
+          VE_DATA.destinations.forEach(d => select.appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
+        };
+        document.querySelectorAll('.destination-select').forEach(sel => addDestOption(sel));
+
+        const destContainer = document.getElementById('destinations-list-input');
+        let destCount = destContainer ? destContainer.querySelectorAll('[name="destination"]').length : 1;
+        document.getElementById('add-destination')?.addEventListener('click', () => {
+          destCount++;
+          const div = document.createElement('div');
+          div.className = 'form-group';
+          div.innerHTML = `<label>Destination ${destCount}</label><select name="destination" class="destination-select"><option value="">Select destination</option></select>`;
+          destContainer.appendChild(div);
+          VE_DATA.destinations.forEach(d => div.querySelector('select').appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
+        });
+      }
+    } catch (e) { console.error(e); }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
+      const fd = new FormData(form);
+      const destinations = [...form.querySelectorAll('[name="destination"]')]
+        .map((i) => i.value.trim())
+        .filter(Boolean);
+      if (!destinations.length) { VE.showToast('Add at least one destination.', true); if (btn) btn.disabled = false; return; }
+
+      try {
+        await VE_FORMS.submitTravelPlan({
+          name: fd.get('name'), email: fd.get('email'), phone: fd.get('phone') || '', destinations, num_travelers: fd.get('num_travelers') || '', budget_per_person: fd.get('budget') || '', notes: fd.get('notes') || ''
+        });
+        document.getElementById('travel-plan-content')?.classList.add('hidden');
+        document.getElementById('plan-trip-success')?.classList.remove('hidden');
+        VE.showToast('Trip request received — we\'ll be in touch shortly.');
+      } catch (err) { VE.showToast(err.message || 'Failed to submit.', true); }
+      finally { if (btn) btn.disabled = false; }
+    });
+  }
+
+  function initTransportBookingForm() {
+    // reuse the previously added initTravelPlanForm implementation but target the transport-booking-form elements
+    const form = document.getElementById('transport-booking-form');
+    if (!form) return initTravelPlanForm();
 
     const segmentsContainer = document.getElementById("segments-container");
     const addBtn = document.getElementById("add-segment");
     let segmentIndex = 0;
 
-    // debounce helper
-    function debounce(fn, wait = 300) {
-      let t;
-      return function (...args) {
-        clearTimeout(t);
-        t = setTimeout(() => fn.apply(this, args), wait);
-      };
-    }
+    function debounce(fn, wait = 300) { let t; return function (...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); }; }
 
-    // Simple Nominatim autocomplete (client-side). Be mindful of rate limits in production.
     function attachAutocomplete(input) {
       if (!input) return;
       input.setAttribute('autocomplete', 'off');
-      let listEl = null;
-      let items = [];
-      let selected = -1;
-
-      function closeList() {
-        if (listEl) { listEl.remove(); listEl = null; }
-        items = [];
-        selected = -1;
-      }
-
-      function renderList() {
-        closeList();
-        listEl = document.createElement('div');
-        listEl.className = 'autocomplete-list card';
-        listEl.style.position = 'absolute';
-        listEl.style.zIndex = 60;
-        listEl.style.width = (input.offsetWidth) + 'px';
-        (input.parentElement).appendChild(listEl);
-
-        items.forEach((it, i) => {
-          const row = document.createElement('div');
-          row.className = 'autocomplete-item';
-          row.tabIndex = 0;
-          row.innerHTML = `<div class="autocomplete-title">${VE.esc(it.display)}</div><div class="text-sm text-muted">${VE.esc(it.type || '')} ${it.address ? VE.esc(it.address) : ''}</div>`;
-          row.addEventListener('click', () => select(i));
-          row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); select(i); } });
-          listEl.appendChild(row);
-        });
-      }
-
-      function select(i) {
-        const it = items[i];
-        if (!it) return;
-        input.value = it.display;
-        input.dataset.lat = it.lat;
-        input.dataset.lon = it.lon;
-        input.dataset.type = it.type || '';
-        closeList();
-      }
-
-      const doSearch = debounce(async () => {
-        const q = input.value.trim();
-        if (!q) { closeList(); return; }
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`;
-          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-          const data = await res.json();
-          items = data.map(d => ({ display: d.display_name, lat: d.lat, lon: d.lon, type: d.type, address: d.address && (d.address.city || d.address.town || d.address.village || d.address.state || d.address.country) }));
-          if (items.length) renderList(); else closeList();
-        } catch (e) {
-          console.error('Autocomplete error', e);
-          closeList();
-        }
-      }, 300);
-
+      let listEl = null; let items = []; let selected = -1;
+      function closeList() { if (listEl) { listEl.remove(); listEl = null; } items = []; selected = -1; }
+      function renderList() { closeList(); listEl = document.createElement('div'); listEl.className = 'autocomplete-list card'; listEl.style.position = 'absolute'; listEl.style.zIndex = 60; listEl.style.width = (input.offsetWidth) + 'px'; (input.parentElement).appendChild(listEl); items.forEach((it, i) => { const row = document.createElement('div'); row.className = 'autocomplete-item'; row.tabIndex = 0; row.innerHTML = `<div class="autocomplete-title">${VE.esc(it.display)}</div><div class="text-sm text-muted">${VE.esc(it.type || '')} ${it.address ? VE.esc(it.address) : ''}</div>`; row.addEventListener('click', () => select(i)); row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); select(i); } }); listEl.appendChild(row); }); }
+      function select(i) { const it = items[i]; if (!it) return; input.value = it.display; input.dataset.lat = it.lat; input.dataset.lon = it.lon; input.dataset.type = it.type || ''; closeList(); }
+      const doSearch = debounce(async () => { const q = input.value.trim(); if (!q) { closeList(); return; } try { const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`; const res = await fetch(url, { headers: { 'Accept': 'application/json' } }); const data = await res.json(); items = data.map(d => ({ display: d.display_name, lat: d.lat, lon: d.lon, type: d.type, address: d.address && (d.address.city || d.address.town || d.address.village || d.address.state || d.address.country) })); if (items.length) renderList(); else closeList(); } catch (e) { console.error('Autocomplete error', e); closeList(); } }, 300);
       input.addEventListener('input', () => { delete input.dataset.lat; delete input.dataset.lon; doSearch(); });
-      input.addEventListener('keydown', (e) => {
-        if (!listEl) return;
-        const nodes = Array.from(listEl.children);
-        if (e.key === 'ArrowDown') { e.preventDefault(); selected = Math.min(selected + 1, nodes.length - 1); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); selected = Math.max(selected - 1, 0); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); }
-        else if (e.key === 'Enter') { if (selected >= 0) { e.preventDefault(); nodes[selected].click(); } }
-        else if (e.key === 'Escape') { closeList(); }
-      });
-
-      // close on outside click
+      input.addEventListener('keydown', (e) => { if (!listEl) return; const nodes = Array.from(listEl.children); if (e.key === 'ArrowDown') { e.preventDefault(); selected = Math.min(selected + 1, nodes.length - 1); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); } else if (e.key === 'ArrowUp') { e.preventDefault(); selected = Math.max(selected - 1, 0); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); } else if (e.key === 'Enter') { if (selected >= 0) { e.preventDefault(); nodes[selected].click(); } } else if (e.key === 'Escape') { closeList(); } });
       document.addEventListener('click', (ev) => { if (ev.target !== input && !input.contains(ev.target) && listEl && !listEl.contains(ev.target)) closeList(); });
       input.addEventListener('blur', () => setTimeout(closeList, 150));
     }
 
-    function updateSegmentHeaders() {
-      Array.from(segmentsContainer.children).forEach((el, i) => {
-        const h = el.querySelector('h3'); if (h) h.textContent = `Trip Segment ${i + 1}`;
-      });
-    }
+    function updateSegmentHeaders() { Array.from(segmentsContainer.children).forEach((el, i) => { const h = el.querySelector('h3'); if (h) h.textContent = `Trip Segment ${i + 1}`; }); }
 
     function addSegment(prefill) {
       segmentIndex++;
@@ -451,12 +428,8 @@
 
       segmentsContainer.appendChild(wrap);
       wrap.querySelector('.remove-segment').addEventListener('click', () => { wrap.remove(); updateSegmentHeaders(); });
-
-      // attach autocomplete to the new inputs
       attachAutocomplete(wrap.querySelector('.loc-input.source'));
       attachAutocomplete(wrap.querySelector('.loc-input.destination'));
-
-      // apply prefill if provided
       if (prefill && typeof prefill === 'object') {
         const s = wrap.querySelector('.loc-input.source'); const d = wrap.querySelector('.loc-input.destination');
         if (prefill.source) s.value = prefill.source.display || prefill.source;
@@ -471,9 +444,7 @@
       return wrap;
     }
 
-    // init with one segment
     if (segmentsContainer && segmentsContainer.children.length === 0) addSegment();
-
     addBtn?.addEventListener('click', () => addSegment());
 
     form.addEventListener('submit', async (e) => {
@@ -500,11 +471,7 @@
         segments.push({ source: src, destination: dst, date, mode, travelers, notes });
       });
 
-      if (!valid) {
-        VE.showToast('Please fill source and destination for each segment.', true);
-        if (btn) btn.disabled = false;
-        return;
-      }
+      if (!valid) { VE.showToast('Please fill source and destination for each segment.', true); if (btn) btn.disabled = false; return; }
 
       try {
         const payload = {
@@ -519,13 +486,10 @@
 
         await VE_FORMS.submitTravelPlan(payload);
         document.getElementById('travel-plan-content')?.classList.add('hidden');
-        document.getElementById('travel-plan-success')?.classList.remove('hidden');
-        VE.showToast("Trip request received — we'll be in touch shortly.");
-      } catch (err) {
-        VE.showToast(err.message || 'Failed to submit.', true);
-      } finally {
-        if (btn) btn.disabled = false;
-      }
+        document.getElementById('transport-success')?.classList.remove('hidden');
+        VE.showToast("Transport booking received — we'll be in touch shortly.");
+      } catch (err) { VE.showToast(err.message || 'Failed to submit.', true); }
+      finally { if (btn) btn.disabled = false; }
     });
   }
 
@@ -543,5 +507,7 @@
     initTravelPlanForm,
     // back-compat alias used by some pages
     initTravelPlan: initTravelPlanForm,
+    initPlanTripForm,
+    initTransportBookingForm,
   };
 })();
