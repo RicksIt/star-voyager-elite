@@ -325,44 +325,106 @@
     renderItems();
   }
 
+  // utility debounce used by autocomplete
+  function debounce(fn, wait = 300) { let t; return function (...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); }; }
+
+  // Top-level Nominatim autocomplete function so both forms can reuse it
+  function attachAutocomplete(input) {
+    if (!input) return;
+    input.setAttribute('autocomplete', 'off');
+    let listEl = null; let items = []; let selected = -1;
+    function closeList() { if (listEl) { listEl.remove(); listEl = null; } items = []; selected = -1; }
+    function renderList() {
+      closeList();
+      listEl = document.createElement('div');
+      listEl.className = 'autocomplete-list card';
+      listEl.style.position = 'absolute'; listEl.style.zIndex = 60; listEl.style.width = (input.offsetWidth) + 'px';
+      (input.parentElement).appendChild(listEl);
+      items.forEach((it, i) => {
+        const row = document.createElement('div');
+        row.className = 'autocomplete-item'; row.tabIndex = 0;
+        row.innerHTML = `<div class="autocomplete-title">${VE.esc(it.display)}</div><div class="text-sm text-muted">${VE.esc(it.type || '')} ${it.address ? VE.esc(it.address) : ''}</div>`;
+        row.addEventListener('click', () => select(i));
+        row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); select(i); } });
+        listEl.appendChild(row);
+      });
+    }
+    function select(i) { const it = items[i]; if (!it) return; input.value = it.display; input.dataset.lat = it.lat; input.dataset.lon = it.lon; input.dataset.type = it.type || ''; closeList(); }
+    const doSearch = debounce(async () => {
+      const q = input.value.trim(); if (!q) { closeList(); return; }
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        items = data.map(d => ({ display: d.display_name, lat: d.lat, lon: d.lon, type: d.type, address: d.address && (d.address.city || d.address.town || d.address.village || d.address.state || d.address.country) }));
+        if (items.length) renderList(); else closeList();
+      } catch (e) { console.error('Autocomplete error', e); closeList(); }
+    }, 300);
+
+    input.addEventListener('input', () => { delete input.dataset.lat; delete input.dataset.lon; doSearch(); });
+    input.addEventListener('keydown', (e) => {
+      if (!listEl) return; const nodes = Array.from(listEl.children);
+      if (e.key === 'ArrowDown') { e.preventDefault(); selected = Math.min(selected + 1, nodes.length - 1); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); selected = Math.max(selected - 1, 0); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); }
+      else if (e.key === 'Enter') { if (selected >= 0) { e.preventDefault(); nodes[selected].click(); } }
+      else if (e.key === 'Escape') { closeList(); }
+    });
+    document.addEventListener('click', (ev) => { if (ev.target !== input && !input.contains(ev.target) && listEl && !listEl.contains(ev.target)) closeList(); });
+    input.addEventListener('blur', () => setTimeout(closeList, 150));
+  }
+
+  // Plan Your Trip initializer — uses free-text destinations with autocomplete, adds from/to dates and transport mode options
   function initPlanTripForm() {
     const form = document.getElementById("plan-trip-form");
     if (!form) return;
 
-    // Populate destination selects as before
-    try {
-      if (window.VE_DATA && Array.isArray(VE_DATA.destinations)) {
-        const addDestOption = (select) => {
-          while (select.options.length > 1) select.remove(1);
-          VE_DATA.destinations.forEach(d => select.appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
-        };
-        document.querySelectorAll('.destination-select').forEach(sel => addDestOption(sel));
+    const destContainer = document.getElementById('destinations-list-input');
+    let destCount = destContainer ? destContainer.querySelectorAll('.destination-input').length : 0;
 
-        const destContainer = document.getElementById('destinations-list-input');
-        let destCount = destContainer ? destContainer.querySelectorAll('[name="destination"]').length : 1;
-        document.getElementById('add-destination')?.addEventListener('click', () => {
-          destCount++;
-          const div = document.createElement('div');
-          div.className = 'form-group';
-          div.innerHTML = `<label>Destination ${destCount}</label><select name="destination" class="destination-select"><option value="">Select destination</option></select>`;
-          destContainer.appendChild(div);
-          VE_DATA.destinations.forEach(d => div.querySelector('select').appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
-        });
-      }
-    } catch (e) { console.error(e); }
+    function addDestination(prefill) {
+      destCount++;
+      const div = document.createElement('div');
+      div.className = 'form-group';
+      div.innerHTML = `<label>Destination ${destCount}</label><input type="text" name="destination" class="destination-input loc-input" placeholder="Enter destination">`;
+      destContainer.appendChild(div);
+      const input = div.querySelector('input');
+      attachAutocomplete(input);
+      if (prefill) input.value = prefill;
+    }
+
+    // init existing one
+    if (destContainer && destContainer.querySelectorAll('.destination-input').length === 0) addDestination();
+
+    document.getElementById('add-destination')?.addEventListener('click', () => addDestination());
+
+    // add additional fields: source, from_date, to_date, transport modes — insert if not present
+    if (!document.getElementById('plan-source')) {
+      const row = document.createElement('div'); row.className = 'form-row';
+      row.innerHTML = `<div class="form-group"><label>Source</label><input id="plan-source" name="from_location" class="loc-input" placeholder="Start location"></div>
+                       <div class="form-group"><label>From Date</label><input name="start_date" type="date"></div>
+                       <div class="form-group"><label>To Date</label><input name="end_date" type="date"></div>`;
+      form.insertBefore(row, form.firstElementChild);
+      attachAutocomplete(document.getElementById('plan-source'));
+    }
+
+    // transport modes block
+    if (!document.getElementById('plan-modes')) {
+      const modes = ['flight','train','bus','car','ferry','other'];
+      const div = document.createElement('div'); div.className = 'form-group'; div.id = 'plan-modes';
+      div.innerHTML = `<label>Preferred Mode(s) of Transport</label><div class="checkbox-group">` + modes.map(m => `<label class="checkbox-label"><input type="checkbox" name="transport_mode" value="${m}"> ${m.charAt(0).toUpperCase()+m.slice(1)}</label>`).join('') + `</div>`;
+      // insert before notes (if exists)
+      const notes = form.querySelector('textarea[name="notes"]'); if (notes) notes.parentElement.insertBefore(div, notes); else form.appendChild(div);
+    }
 
     form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
+      e.preventDefault(); const btn = form.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
       const fd = new FormData(form);
-      const destinations = [...form.querySelectorAll('[name="destination"]')]
-        .map((i) => i.value.trim())
-        .filter(Boolean);
+      const destinations = [...form.querySelectorAll('input[name="destination"], .destination-input')].map(i => i.value.trim()).filter(Boolean);
+      const modes = [...form.querySelectorAll('input[name="transport_mode"]:checked')].map(c => c.value);
       if (!destinations.length) { VE.showToast('Add at least one destination.', true); if (btn) btn.disabled = false; return; }
-
       try {
         await VE_FORMS.submitTravelPlan({
-          name: fd.get('name'), email: fd.get('email'), phone: fd.get('phone') || '', destinations, num_travelers: fd.get('num_travelers') || '', budget_per_person: fd.get('budget') || '', notes: fd.get('notes') || ''
+          name: fd.get('name'), email: fd.get('email'), phone: fd.get('phone') || '', from_location: fd.get('from_location') || '', destinations, start_date: fd.get('start_date') || '', end_date: fd.get('end_date') || '', num_travelers: fd.get('num_travelers') || '', transport_modes: modes, budget_per_person: fd.get('budget') || '', notes: fd.get('notes') || ''
         });
         document.getElementById('travel-plan-content')?.classList.add('hidden');
         document.getElementById('plan-trip-success')?.classList.remove('hidden');
@@ -372,38 +434,21 @@
     });
   }
 
+  // Transport booking initializer — ensure it returns early if form not present (do not call other inits)
   function initTransportBookingForm() {
-    // reuse the previously added initTravelPlanForm implementation but target the transport-booking-form elements
     const form = document.getElementById('transport-booking-form');
-    if (!form) return initTravelPlanForm();
+    if (!form) return;
 
     const segmentsContainer = document.getElementById("segments-container");
     const addBtn = document.getElementById("add-segment");
     let segmentIndex = 0;
-
-    function debounce(fn, wait = 300) { let t; return function (...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); }; }
-
-    function attachAutocomplete(input) {
-      if (!input) return;
-      input.setAttribute('autocomplete', 'off');
-      let listEl = null; let items = []; let selected = -1;
-      function closeList() { if (listEl) { listEl.remove(); listEl = null; } items = []; selected = -1; }
-      function renderList() { closeList(); listEl = document.createElement('div'); listEl.className = 'autocomplete-list card'; listEl.style.position = 'absolute'; listEl.style.zIndex = 60; listEl.style.width = (input.offsetWidth) + 'px'; (input.parentElement).appendChild(listEl); items.forEach((it, i) => { const row = document.createElement('div'); row.className = 'autocomplete-item'; row.tabIndex = 0; row.innerHTML = `<div class="autocomplete-title">${VE.esc(it.display)}</div><div class="text-sm text-muted">${VE.esc(it.type || '')} ${it.address ? VE.esc(it.address) : ''}</div>`; row.addEventListener('click', () => select(i)); row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); select(i); } }); listEl.appendChild(row); }); }
-      function select(i) { const it = items[i]; if (!it) return; input.value = it.display; input.dataset.lat = it.lat; input.dataset.lon = it.lon; input.dataset.type = it.type || ''; closeList(); }
-      const doSearch = debounce(async () => { const q = input.value.trim(); if (!q) { closeList(); return; } try { const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`; const res = await fetch(url, { headers: { 'Accept': 'application/json' } }); const data = await res.json(); items = data.map(d => ({ display: d.display_name, lat: d.lat, lon: d.lon, type: d.type, address: d.address && (d.address.city || d.address.town || d.address.village || d.address.state || d.address.country) })); if (items.length) renderList(); else closeList(); } catch (e) { console.error('Autocomplete error', e); closeList(); } }, 300);
-      input.addEventListener('input', () => { delete input.dataset.lat; delete input.dataset.lon; doSearch(); });
-      input.addEventListener('keydown', (e) => { if (!listEl) return; const nodes = Array.from(listEl.children); if (e.key === 'ArrowDown') { e.preventDefault(); selected = Math.min(selected + 1, nodes.length - 1); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); } else if (e.key === 'ArrowUp') { e.preventDefault(); selected = Math.max(selected - 1, 0); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); } else if (e.key === 'Enter') { if (selected >= 0) { e.preventDefault(); nodes[selected].click(); } } else if (e.key === 'Escape') { closeList(); } });
-      document.addEventListener('click', (ev) => { if (ev.target !== input && !input.contains(ev.target) && listEl && !listEl.contains(ev.target)) closeList(); });
-      input.addEventListener('blur', () => setTimeout(closeList, 150));
-    }
 
     function updateSegmentHeaders() { Array.from(segmentsContainer.children).forEach((el, i) => { const h = el.querySelector('h3'); if (h) h.textContent = `Trip Segment ${i + 1}`; }); }
 
     function addSegment(prefill) {
       segmentIndex++;
       const wrap = document.createElement('div');
-      wrap.className = 'card segment';
-      wrap.style.marginBottom = '1rem';
+      wrap.className = 'card segment'; wrap.style.marginBottom = '1rem';
       wrap.innerHTML = `
         <div class="card-body">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
@@ -440,50 +485,27 @@
         if (prefill.notes) wrap.querySelector('.segment-notes').value = prefill.notes;
       }
 
-      updateSegmentHeaders();
-      return wrap;
+      updateSegmentHeaders(); return wrap;
     }
 
     if (segmentsContainer && segmentsContainer.children.length === 0) addSegment();
     addBtn?.addEventListener('click', () => addSegment());
 
     form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
-
-      const fd = new FormData(form);
-      const segments = [];
-      let valid = true;
-
+      e.preventDefault(); const btn = form.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
+      const fd = new FormData(form); const segments = []; let valid = true;
       Array.from(segmentsContainer.children).forEach((el) => {
-        const srcEl = el.querySelector('.loc-input.source');
-        const dstEl = el.querySelector('.loc-input.destination');
-        const date = el.querySelector('.segment-date')?.value || '';
-        const mode = el.querySelector('.segment-mode')?.value || '';
-        const travelers = el.querySelector('.segment-travelers')?.value || '';
-        const notes = el.querySelector('.segment-notes')?.value || '';
-
+        const srcEl = el.querySelector('.loc-input.source'); const dstEl = el.querySelector('.loc-input.destination');
+        const date = el.querySelector('.segment-date')?.value || ''; const mode = el.querySelector('.segment-mode')?.value || '';
+        const travelers = el.querySelector('.segment-travelers')?.value || ''; const notes = el.querySelector('.segment-notes')?.value || '';
         const src = srcEl ? { display: srcEl.value.trim(), lat: srcEl.dataset.lat || '', lon: srcEl.dataset.lon || '', type: srcEl.dataset.type || '' } : null;
         const dst = dstEl ? { display: dstEl.value.trim(), lat: dstEl.dataset.lat || '', lon: dstEl.dataset.lon || '', type: dstEl.dataset.type || '' } : null;
-
         if (!src || !src.display || !dst || !dst.display) { valid = false; }
-
         segments.push({ source: src, destination: dst, date, mode, travelers, notes });
       });
-
       if (!valid) { VE.showToast('Please fill source and destination for each segment.', true); if (btn) btn.disabled = false; return; }
-
       try {
-        const payload = {
-          name: fd.get('name'),
-          email: fd.get('email'),
-          phone: fd.get('phone') || '',
-          total_travelers: fd.get('num_travelers') || '',
-          budget_per_person: fd.get('budget') || '',
-          notes: fd.get('notes') || '',
-          segments: JSON.stringify(segments),
-        };
-
+        const payload = { name: fd.get('name'), email: fd.get('email'), phone: fd.get('phone') || '', total_travelers: fd.get('num_travelers') || '', budget_per_person: fd.get('budget') || '', notes: fd.get('notes') || '', segments: JSON.stringify(segments) };
         await VE_FORMS.submitTravelPlan(payload);
         document.getElementById('travel-plan-content')?.classList.add('hidden');
         document.getElementById('transport-success')?.classList.remove('hidden');
