@@ -24,27 +24,29 @@
 
         <!-- PLAN YOUR TRIP (original) -->
         <form id="plan-trip-form" class="space-y-4">
+          <!-- Name & Phone first -->
           <div class="form-row">
             <div class="form-group"><label>Full Name *</label><input name="name" required placeholder="Your name"></div>
             <div class="form-group"><label>Phone</label><input name="phone" type="tel" placeholder="Your phone"></div>
           </div>
 
-          <div class="form-group"><label>Email *</label><input name="email" type="email" required placeholder="your@email.com"></div>
+          <!-- Source location (autocomplete) will be inserted by JS if missing with id=plan-source -->
 
           <div id="destinations-list-input">
-            <div class="form-group"><label>Destination 1</label>
-              <select name="destination" class="destination-select"><option value="">Select destination</option></select>
-            </div>
+            <!-- Trip destinations (dynamic). JS will add destination inputs here -->
           </div>
 
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button type="button" id="add-destination" class="btn btn-outline">Add Destination</button>
           </div>
 
+          <!-- Dates -->
           <div class="form-row">
-            <div class="form-group"><label>Total Travelers</label><input name="num_travelers" type="number" min="1" placeholder="Number"></div>
-            <div class="form-group"><label>Budget per person</label><input name="budget" type="text" placeholder="e.g. 20000"></div>
+            <div class="form-group"><label>From Date</label><input name="start_date" type="date"></div>
+            <div class="form-group"><label>To Date</label><input name="end_date" type="date"></div>
           </div>
+
+          <!-- Transport modes (checkboxes) will be injected by JS if missing -->
 
           <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" placeholder="Any overall requirements..."></textarea></div>
 
@@ -69,11 +71,6 @@
 
           <div style="display:flex;gap:0.5rem;align-items:center">
             <button type="button" id="add-segment" class="btn btn-outline">Add Trip Segment</button>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group"><label>Total Travelers</label><input name="num_travelers" type="number" min="1" placeholder="Number"></div>
-            <div class="form-group"><label>Budget per person</label><input name="budget" type="text" placeholder="e.g. 20000"></div>
           </div>
 
           <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" placeholder="Any overall requirements..."></textarea></div>
