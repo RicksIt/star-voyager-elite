@@ -158,5 +158,7 @@
     });
   }
 
+  // Note: travel-plan submissions will send 'segments' as a JSON string containing objects with source/destination (display, lat, lon), date, mode, travelers, notes.
+
   window.VE_FORMS = { submitEnquiry, submitTravelPlan, bindEnquiryForm };
 })();

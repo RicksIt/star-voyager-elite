@@ -329,91 +329,200 @@
     const form = document.getElementById("travel-plan-form");
     if (!form) return;
 
-    // Populate source country/city and destination selects from VE_DATA
-    try {
-      if (window.VE_DATA && Array.isArray(VE_DATA.destinations)) {
-        const countries = Array.from(new Set(VE_DATA.destinations.map(d => d.country))).sort();
-        const countryEl = document.getElementById('source-country');
-        const cityEl = document.getElementById('source-city');
-        const addDestOption = (select) => {
-          // clear except first
-          while (select.options.length > 1) select.remove(1);
-          VE_DATA.destinations.forEach(d => select.appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
-        };
-        if (countryEl) {
-          countries.forEach(c => countryEl.appendChild(new Option(c, c)));
-          countryEl.addEventListener('change', () => {
-            // filter cities by country
-            while (cityEl.options.length > 1) cityEl.remove(1);
-            VE_DATA.destinations.filter(d => d.country === countryEl.value).forEach(d => cityEl.appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
-          });
-        }
-        if (cityEl) {
-          addDestOption(cityEl);
-        }
+    const segmentsContainer = document.getElementById("segments-container");
+    const addBtn = document.getElementById("add-segment");
+    let segmentIndex = 0;
 
-        // populate first destination select
-        document.querySelectorAll('.destination-select').forEach(sel => addDestOption(sel));
+    // debounce helper
+    function debounce(fn, wait = 300) {
+      let t;
+      return function (...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), wait);
+      };
+    }
+
+    // Simple Nominatim autocomplete (client-side). Be mindful of rate limits in production.
+    function attachAutocomplete(input) {
+      if (!input) return;
+      input.setAttribute('autocomplete', 'off');
+      let listEl = null;
+      let items = [];
+      let selected = -1;
+
+      function closeList() {
+        if (listEl) { listEl.remove(); listEl = null; }
+        items = [];
+        selected = -1;
       }
-    } catch (e) { console.error(e); }
 
-    const destContainer = document.getElementById("destinations-list-input");
-    let destCount = destContainer ? destContainer.querySelectorAll('[name="destination"]').length : 1;
+      function renderList() {
+        closeList();
+        listEl = document.createElement('div');
+        listEl.className = 'autocomplete-list card';
+        listEl.style.position = 'absolute';
+        listEl.style.zIndex = 60;
+        listEl.style.width = (input.offsetWidth) + 'px';
+        (input.parentElement).appendChild(listEl);
 
-    document.getElementById("add-destination")?.addEventListener("click", () => {
-      destCount++;
-      const div = document.createElement("div");
-      div.className = "form-group";
-      div.innerHTML = `<label>Destination ${destCount}</label><select name="destination" class="destination-select"><option value="">Select destination</option></select>`;
-      destContainer.appendChild(div);
-      // populate new select
-      try { if (window.VE_DATA && Array.isArray(VE_DATA.destinations)) {
-        VE_DATA.destinations.forEach(d => div.querySelector('select').appendChild(new Option(d.name + ' (' + d.region + ')', d.slug)));
-      }} catch(e){console.error(e);}
-    });
+        items.forEach((it, i) => {
+          const row = document.createElement('div');
+          row.className = 'autocomplete-item';
+          row.tabIndex = 0;
+          row.innerHTML = `<div class="autocomplete-title">${VE.esc(it.display)}</div><div class="text-sm text-muted">${VE.esc(it.type || '')} ${it.address ? VE.esc(it.address) : ''}</div>`;
+          row.addEventListener('click', () => select(i));
+          row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); select(i); } });
+          listEl.appendChild(row);
+        });
+      }
 
-    form.addEventListener("submit", async (e) => {
+      function select(i) {
+        const it = items[i];
+        if (!it) return;
+        input.value = it.display;
+        input.dataset.lat = it.lat;
+        input.dataset.lon = it.lon;
+        input.dataset.type = it.type || '';
+        closeList();
+      }
+
+      const doSearch = debounce(async () => {
+        const q = input.value.trim();
+        if (!q) { closeList(); return; }
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`;
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          const data = await res.json();
+          items = data.map(d => ({ display: d.display_name, lat: d.lat, lon: d.lon, type: d.type, address: d.address && (d.address.city || d.address.town || d.address.village || d.address.state || d.address.country) }));
+          if (items.length) renderList(); else closeList();
+        } catch (e) {
+          console.error('Autocomplete error', e);
+          closeList();
+        }
+      }, 300);
+
+      input.addEventListener('input', () => { delete input.dataset.lat; delete input.dataset.lon; doSearch(); });
+      input.addEventListener('keydown', (e) => {
+        if (!listEl) return;
+        const nodes = Array.from(listEl.children);
+        if (e.key === 'ArrowDown') { e.preventDefault(); selected = Math.min(selected + 1, nodes.length - 1); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); selected = Math.max(selected - 1, 0); nodes.forEach(n => n.classList.remove('active')); nodes[selected]?.classList.add('active'); }
+        else if (e.key === 'Enter') { if (selected >= 0) { e.preventDefault(); nodes[selected].click(); } }
+        else if (e.key === 'Escape') { closeList(); }
+      });
+
+      // close on outside click
+      document.addEventListener('click', (ev) => { if (ev.target !== input && !input.contains(ev.target) && listEl && !listEl.contains(ev.target)) closeList(); });
+      input.addEventListener('blur', () => setTimeout(closeList, 150));
+    }
+
+    function updateSegmentHeaders() {
+      Array.from(segmentsContainer.children).forEach((el, i) => {
+        const h = el.querySelector('h3'); if (h) h.textContent = `Trip Segment ${i + 1}`;
+      });
+    }
+
+    function addSegment(prefill) {
+      segmentIndex++;
+      const wrap = document.createElement('div');
+      wrap.className = 'card segment';
+      wrap.style.marginBottom = '1rem';
+      wrap.innerHTML = `
+        <div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+            <h3>Trip Segment ${segmentIndex}</h3>
+            <button type="button" class="btn btn-outline remove-segment">Remove</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Source *</label><input type="text" class="loc-input source" placeholder="Start location"></div>
+            <div class="form-group"><label>Destination *</label><input type="text" class="loc-input destination" placeholder="End location"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Date</label><input type="date" class="segment-date"></div>
+            <div class="form-group"><label>Mode</label>
+              <select class="segment-mode"><option value="">Select</option><option value="flight">Flight</option><option value="train">Train</option><option value="bus">Bus</option><option value="car">Car</option><option value="ferry">Ferry</option><option value="other">Other</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Travellers</label><input type="number" min="1" class="segment-travelers" value="1"></div>
+            <div class="form-group"><label>Notes</label><input type="text" class="segment-notes" placeholder="Any notes for this segment"></div>
+          </div>
+        </div>`;
+
+      segmentsContainer.appendChild(wrap);
+      wrap.querySelector('.remove-segment').addEventListener('click', () => { wrap.remove(); updateSegmentHeaders(); });
+
+      // attach autocomplete to the new inputs
+      attachAutocomplete(wrap.querySelector('.loc-input.source'));
+      attachAutocomplete(wrap.querySelector('.loc-input.destination'));
+
+      // apply prefill if provided
+      if (prefill && typeof prefill === 'object') {
+        const s = wrap.querySelector('.loc-input.source'); const d = wrap.querySelector('.loc-input.destination');
+        if (prefill.source) s.value = prefill.source.display || prefill.source;
+        if (prefill.destination) d.value = prefill.destination.display || prefill.destination;
+        if (prefill.date) wrap.querySelector('.segment-date').value = prefill.date;
+        if (prefill.mode) wrap.querySelector('.segment-mode').value = prefill.mode;
+        if (prefill.travelers) wrap.querySelector('.segment-travelers').value = prefill.travelers;
+        if (prefill.notes) wrap.querySelector('.segment-notes').value = prefill.notes;
+      }
+
+      updateSegmentHeaders();
+      return wrap;
+    }
+
+    // init with one segment
+    if (segmentsContainer && segmentsContainer.children.length === 0) addSegment();
+
+    addBtn?.addEventListener('click', () => addSegment());
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const btn = form.querySelector('[type="submit"]');
-      if (btn) btn.disabled = true;
+      const btn = form.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
 
       const fd = new FormData(form);
-      const destinations = [...form.querySelectorAll('[name="destination"]')]
-        .map((i) => i.value.trim())
-        .filter(Boolean);
-      const modes = [...form.querySelectorAll('[name="transport"]:checked')].map((c) => c.value);
+      const segments = [];
+      let valid = true;
 
-      if (!destinations.length) {
-        VE.showToast("Add at least one destination.", true);
-        if (btn) btn.disabled = false;
-        return;
-      }
-      if (!modes.length) {
-        VE.showToast("Select at least one mode of transport.", true);
+      Array.from(segmentsContainer.children).forEach((el) => {
+        const srcEl = el.querySelector('.loc-input.source');
+        const dstEl = el.querySelector('.loc-input.destination');
+        const date = el.querySelector('.segment-date')?.value || '';
+        const mode = el.querySelector('.segment-mode')?.value || '';
+        const travelers = el.querySelector('.segment-travelers')?.value || '';
+        const notes = el.querySelector('.segment-notes')?.value || '';
+
+        const src = srcEl ? { display: srcEl.value.trim(), lat: srcEl.dataset.lat || '', lon: srcEl.dataset.lon || '', type: srcEl.dataset.type || '' } : null;
+        const dst = dstEl ? { display: dstEl.value.trim(), lat: dstEl.dataset.lat || '', lon: dstEl.dataset.lon || '', type: dstEl.dataset.type || '' } : null;
+
+        if (!src || !src.display || !dst || !dst.display) { valid = false; }
+
+        segments.push({ source: src, destination: dst, date, mode, travelers, notes });
+      });
+
+      if (!valid) {
+        VE.showToast('Please fill source and destination for each segment.', true);
         if (btn) btn.disabled = false;
         return;
       }
 
       try {
-        await VE_FORMS.submitTravelPlan({
-          name: fd.get("name"),
-          email: fd.get("email"),
-          phone: fd.get("phone") || "",
-          from_location: fd.get("from_location") || (document.getElementById('source-city') && document.getElementById('source-city').value) || "",
-          destinations,
-          start_date: fd.get("start_date") || "",
-          end_date: fd.get("end_date") || "",
-          num_travelers: fd.get("num_travelers") || 2,
-          transport_modes: modes,
-          trip_type: fd.get("trip_type"),
-          budget_per_person: fd.get("budget") || "",
-          notes: fd.get("notes") || "",
-        });
-        document.getElementById("travel-plan-content").classList.add("hidden");
-        document.getElementById("travel-plan-success").classList.remove("hidden");
+        const payload = {
+          name: fd.get('name'),
+          email: fd.get('email'),
+          phone: fd.get('phone') || '',
+          total_travelers: fd.get('num_travelers') || '',
+          budget_per_person: fd.get('budget') || '',
+          notes: fd.get('notes') || '',
+          segments: JSON.stringify(segments),
+        };
+
+        await VE_FORMS.submitTravelPlan(payload);
+        document.getElementById('travel-plan-content')?.classList.add('hidden');
+        document.getElementById('travel-plan-success')?.classList.remove('hidden');
         VE.showToast("Trip request received — we'll be in touch shortly.");
       } catch (err) {
-        VE.showToast(err.message || "Failed to submit.", true);
+        VE.showToast(err.message || 'Failed to submit.', true);
       } finally {
         if (btn) btn.disabled = false;
       }

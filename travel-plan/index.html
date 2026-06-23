@@ -22,35 +22,20 @@
 
           <div class="form-group"><label>Email *</label><input name="email" type="email" required placeholder="your@email.com"></div>
 
-          <div class="grid-2">
-            <div class="form-group"><label>Source Country</label><select id="source-country"><option value="">Select country</option></select></div>
-            <div class="form-group"><label>Source City / Place</label><select id="source-city"><option value="">Select city</option></select></div>
+          <div id="segments-container">
+            <!-- Trip segments will be added here by JS -->
           </div>
 
-          <div id="destinations-list-input">
-            <div class="form-group"><label>Destination 1</label><select name="destination" class="destination-select"><option value="">Select destination</option></select></div>
-          </div>
-          <div style="display:flex;gap:0.5rem;align-items:center"><button type="button" id="add-destination" class="btn btn-outline">Add destination</button></div>
-
-          <div class="form-row">
-            <div class="form-group"><label>Start Date</label><input name="start_date" type="date"></div>
-            <div class="form-group"><label>End Date</label><input name="end_date" type="date"></div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button type="button" id="add-segment" class="btn btn-outline">Add Trip Segment</button>
           </div>
 
           <div class="form-row">
-            <div class="form-group"><label>Travelers</label><input name="num_travelers" type="number" min="1" placeholder="Number"></div>
+            <div class="form-group"><label>Total Travelers</label><input name="num_travelers" type="number" min="1" placeholder="Number"></div>
             <div class="form-group"><label>Budget per person</label><input name="budget" type="text" placeholder="e.g. 20000"></div>
           </div>
 
-          <div class="form-group"><label>Transport preferences</label>
-            <div style="display:flex;gap:0.5rem">
-              <label><input type="checkbox" name="transport" value="flight"> Flight</label>
-              <label><input type="checkbox" name="transport" value="train"> Train</label>
-              <label><input type="checkbox" name="transport" value="car"> Car</label>
-            </div>
-          </div>
-
-          <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" placeholder="Any specific requirements..."></textarea></div>
+          <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" placeholder="Any overall requirements..."></textarea></div>
 
           <div style="display:flex;gap:0.5rem"><button type="submit" class="btn btn-primary">Submit Request</button></div>
         </form>
@@ -70,7 +55,6 @@
   <script src="../js/app.js"></script>
   <script>
     VE.initLayout("travel-plan");
-    // initTravelPlan alias calls the updated initTravelPlanForm in app.js
     try{ VE_APP.initTravelPlan(); }catch(e){console.error(e);}  
   </script>
 

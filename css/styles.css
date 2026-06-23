@@ -374,6 +374,12 @@ h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.error { background: var(--destructive); color: white; }
 
+/* Autocomplete (nominatim) */
+.autocomplete-list { max-height: 18rem; overflow-y: auto; border: 1px solid var(--border); padding: 0.5rem; gap: 0.25rem; display: flex; flex-direction: column; }
+.autocomplete-item { padding: 0.5rem; border-radius: 0.5rem; cursor: pointer; background: var(--card); }
+.autocomplete-item:hover, .autocomplete-item.active { background: var(--primary); color: var(--primary-foreground); }
+.autocomplete-title { font-weight: 600; margin-bottom: 0.25rem; }
+
 /* Utilities */
 .text-muted { color: var(--muted-foreground); }
 .text-sm { font-size: 0.875rem; }
