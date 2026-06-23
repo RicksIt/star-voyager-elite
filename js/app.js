@@ -1,4 +1,5 @@
 /* Page-specific rendering and interactions */
+try {
 (function () {
   function initHeroCarousel() {
     const slides = document.querySelectorAll(".hero-slide");
@@ -182,7 +183,7 @@
             <div><h2>Gallery</h2><div class="gallery-grid mt-4">${d.gallery_images.map((img, i) => `<img src="${VE.esc(img)}" alt="Gallery ${i + 1}" loading="lazy">`).join("")}</div></div>
           </div>
           <div class="space-y-6">
-            <div class="card sidebar-card"><div class="card-body space-y-4>
+            <div class="card sidebar-card"><div class="card-body space-y-4">
               <div style="display:flex;gap:0.75rem">${VE.ICONS.calendar}<div><p class="text-sm" style="font-weight:500">Best Time to Visit</p><p class="text-sm text-muted">${VE.esc(d.best_time)}</p></div></div>
               <div style="display:flex;gap:0.75rem">${VE.ICONS.mapPin}<div><p class="text-sm" style="font-weight:500">Location</p><p class="text-sm text-muted">${VE.esc(d.region)}, ${VE.esc(d.country)}</p></div></div>
               ${d.map_url ? `<a href="${VE.esc(d.map_url)}" target="_blank" rel="noopener" class="btn btn-outline btn-full">View on Map</a>` : ""}
@@ -533,3 +534,25 @@
     initTransportBookingForm,
   };
 })();
+} catch (e) {
+  console.error('VE_APP initialization error', e);
+  try {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('DOMContentLoaded', function () {
+        const w = document.createElement('div');
+        w.style.position = 'fixed';
+        w.style.left = '0';
+        w.style.right = '0';
+        w.style.top = '0';
+        w.style.zIndex = 99999;
+        w.style.background = 'rgba(200,30,30,0.95)';
+        w.style.color = 'white';
+        w.style.padding = '1rem';
+        w.style.fontFamily = 'monospace';
+        w.style.whiteSpace = 'pre-wrap';
+        w.textContent = 'JavaScript initialization error: ' + (e && e.message ? e.message : String(e));
+        document.body.appendChild(w);
+      });
+    }
+  } catch (ee) { console.error('Overlay render failed', ee); }
+}
