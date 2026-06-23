@@ -398,17 +398,27 @@ try {
 
     document.getElementById('add-destination')?.addEventListener('click', () => addDestination());
 
-    // insert source input at top if missing
+    // ensure email input exists in the primary row (Name / Phone / Email)
+    const firstRow = form.querySelector('.form-row');
+    if (firstRow && !form.querySelector('input[name="email"]')) {
+      const emailDiv = document.createElement('div');
+      emailDiv.className = 'form-group';
+      emailDiv.innerHTML = `<label>Email</label><input name="email" type="email" placeholder="your@email.com">`;
+      firstRow.appendChild(emailDiv);
+    }
+
+    // insert source input after the name/phone/email row if missing
     if (!document.getElementById('plan-source')) {
       const row = document.createElement('div'); row.className = 'form-row';
       row.innerHTML = `<div class="form-group"><label>Source</label><input id="plan-source" name="from_location" class="loc-input" placeholder="Start location"></div>`;
-      form.insertBefore(row, form.firstElementChild);
+      if (firstRow) form.insertBefore(row, firstRow.nextSibling); else form.insertBefore(row, form.firstElementChild);
       attachAutocomplete(document.getElementById('plan-source'));
     }
 
     // transport modes block
     if (!document.getElementById('plan-modes')) {
-      const modes = ['any','flight','train','bus','car','ferry','other'];
+      // prefer to show specific modes first, keep 'Any' as the last option
+      const modes = ['flight','train','bus','car','ferry','other','any'];
       const div = document.createElement('div'); div.className = 'form-group'; div.id = 'plan-modes';
       div.innerHTML = `<label>Preferred Mode(s) of Transport</label><div class="checkbox-group">` + modes.map(m => `<label class="checkbox-label"><input type="checkbox" name="transport_mode" value="${m}"> ${m.charAt(0).toUpperCase()+m.slice(1)}</label>`).join('') + `</div>`;
       const notes = form.querySelector('textarea[name="notes"]'); if (notes) notes.parentElement.insertBefore(div, notes); else form.appendChild(div);
@@ -460,7 +470,7 @@ try {
           <div class="form-row">
             <div class="form-group"><label>Date</label><input type="date" class="segment-date"></div>
             <div class="form-group"><label>Mode</label>
-              <select class="segment-mode"><option value="">Select</option><option value="any">Any</option><option value="flight">Flight</option><option value="train">Train</option><option value="bus">Bus</option><option value="car">Car</option><option value="ferry">Ferry</option><option value="other">Other</option></select>
+              <select class="segment-mode"><option value="">Select</option><option value="flight">Flight</option><option value="train">Train</option><option value="bus">Bus</option><option value="car">Car</option><option value="ferry">Ferry</option><option value="other">Other</option><option value="any">Any</option></select>
             </div>
           </div>
           <div class="form-row">
