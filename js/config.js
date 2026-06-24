@@ -4,7 +4,7 @@
  */
 window.VE_CONFIG = {
   brand: {
-    short: "Voyager Elite",
+    short: "Star Voyager Elite",
     full: "Voyager Elite Travel Agency",
     email: "krupanand@voyagerelite.travel",
   },
