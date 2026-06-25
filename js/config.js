@@ -24,37 +24,69 @@ window.VE_CONFIG = {
     twitter: "#",
   },
   /**
-   * Form handling — choose ONE provider:
-   *
-   * "google-redirect" — opens your Google Form in a new tab (easiest setup)
-   * "formspree"       — POST to Formspree (free tier: 50/month)
-   * "google-post"     — POST directly to Google Forms (advanced, needs entry IDs)
+   * Form handling — using "google-post" for silent auto-submit
+   * Forms will be filled and submitted in background without user seeing them
    */
   forms: {
-    provider: "google-redirect",
+    provider: "google-post",
 
-    // Google Form URLs — all submissions will redirect to these forms
-    enquiryUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfEAJN35AOGB1hb0XQQsjz68lHi8ol3Qw4CYeG_cF-eGQ6Vag/viewform",
-    travelPlanUrl: "https://docs.google.com/forms/d/e/1FAIpQLSdV6mzD-JjEzMgXjo-K1a_tbzNc0jJq_R0_4Cs0XZ16MIHwEg/viewform",
-    transportBookingUrl: "https://docs.google.com/forms/d/e/1FAIpQLSeVAgWuWmMSYztzlRetpZ1gEF2yuAfvXt9n6w7TcmDTbh3n-g/viewform",
+    // Google Form action endpoints for POST submission
+    enquiryAction: "https://docs.google.com/forms/d/e/1FAIpQLSfEAJN35AOGB1hb0XQQsjz68lHi8ol3Qw4CYeG_cF-eGQ6Vag/formResponse",
+    travelPlanAction: "https://docs.google.com/forms/d/e/1FAIpQLSdV6mzD-JjEzMgXjo-K1a_tbzNc0jJq_R0_4Cs0XZ16MIHwEg/formResponse",
+    transportBookingAction: "https://docs.google.com/forms/d/e/1FAIpQLSeVAgWuWmMSYztzlRetpZ1gEF2yuAfvXt9n6w7TcmDTbh3n-g/formResponse",
 
-    // Formspree endpoint (if provider is "formspree")
+    // Travel Enquiry Form Entry IDs
+    enquiryEntryIds: {
+      name: "entry.1131269551",
+      email: "entry.1729620236",
+      phone: "entry.771633320",
+      message: "entry.1478205533",
+      travelDate: "entry.241453670",
+      travelers: "entry.1572531549",
+      package: "entry.1366720409",
+    },
+
+    // Custom Trip Plan Form Entry IDs
+    travelPlanEntryIds: {
+      name: "entry.1253365035",
+      email: "entry.789250796",
+      phone: "entry.1522248118",
+      fromLocation: "entry.1327714132",
+      destinations: "entry.1733651471",
+      startDate: "entry.1304135612",
+      endDate: "entry.1141532271",
+      transportMode: "entry.990154997",
+      budget: "entry.1015767172",
+      notes: "entry.1304135612",
+    },
+
+    // Transport Booking Form Entry IDs
+    transportBookingEntryIds: {
+      // Section 1: Basic Info
+      name: "entry.1250143177",
+      email: "entry.626632984",
+      phone: "entry.1923781285",
+      
+      // Section 2: Trip Segment
+      source: "entry.1789512304",
+      destination: "entry.1453095976",
+      travelers: "entry.1060493185",
+      notes: "entry.864271153",
+      date_year: "entry.195141226_year",
+      date_month: "entry.195141226_month",
+      date_day: "entry.195141226_day",
+      mode: "entry.1623760142",
+      mode_sentinel: "entry.1623760142_sentinel",
+      
+      // Section 3: Summary
+      totalTravelers: "entry.936040890",
+      budgetPerPerson: "entry.1274534142",
+      overallNotes: "entry.737071276",
+    },
+
+    // Legacy Formspree endpoints (if needed)
     formspreeEnquiry: "https://formspree.io/f/YOUR_FORM_ID",
     formspreeTravelPlan: "https://formspree.io/f/YOUR_FORM_ID",
-
-    // Google Forms POST endpoints (if provider is "google-post")
-    // Get these from your form's "prefill" link or browser dev tools
-    googleEnquiryAction: "https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse",
-    googleTravelPlanAction: "https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse",
-    googleEntryIds: {
-      name: "entry.123456789",
-      email: "entry.987654321",
-      phone: "entry.111111111",
-      travelDate: "entry.222222222",
-      travelers: "entry.333333333",
-      message: "entry.444444444",
-      package: "entry.555555555",
-    },
   },
 
   heroSlides: [
