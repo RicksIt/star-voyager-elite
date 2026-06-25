@@ -33,9 +33,10 @@ window.VE_CONFIG = {
   forms: {
     provider: "google-redirect",
 
-    // Replace with your Google Form URLs after creating forms
-    enquiryUrl: "https://docs.google.com/forms/d/e/YOUR_ENQUIRY_FORM_ID/viewform",
-    travelPlanUrl: "https://docs.google.com/forms/d/e/YOUR_TRAVEL_PLAN_FORM_ID/viewform",
+    // Google Form URLs — all submissions will redirect to these forms
+    enquiryUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfEAJN35AOGB1hb0XQQsjz68lHi8ol3Qw4CYeG_cF-eGQ6Vag/viewform",
+    travelPlanUrl: "https://docs.google.com/forms/d/e/1FAIpQLSdV6mzD-JjEzMgXjo-K1a_tbzNc0jJq_R0_4Cs0XZ16MIHwEg/viewform",
+    transportBookingUrl: "https://docs.google.com/forms/d/e/1FAIpQLSeVAgWuWmMSYztzlRetpZ1gEF2yuAfvXt9n6w7TcmDTbh3n-g/viewform",
 
     // Formspree endpoint (if provider is "formspree")
     formspreeEnquiry: "https://formspree.io/f/YOUR_FORM_ID",
