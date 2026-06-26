@@ -11,13 +11,17 @@
       const ids = cfg.enquiryEntryIds;
       const body = new FormData();
       
-      if (data.name) body.append(ids.name, data.name);
-      if (data.email) body.append(ids.email, data.email);
-      if (data.phone) body.append(ids.phone, data.phone);
-      if (data.message) body.append(ids.message, data.message);
-      if (data.travel_date) body.append(ids.travelDate, data.travel_date);
-      if (data.num_travelers) body.append(ids.travelers, data.num_travelers);
-      if (data.package) body.append(ids.package, data.package);
+      if (data.name) body.append(ids.name, String(data.name));
+      if (data.email) body.append(ids.email, String(data.email));
+      if (data.phone) body.append(ids.phone, String(data.phone));
+      if (data.message) body.append(ids.message, String(data.message));
+      if (data.travel_date) body.append(ids.travelDate, String(data.travel_date));
+      if (data.num_travelers) body.append(ids.travelers, String(data.num_travelers));
+      if (data.package) body.append(ids.package, String(data.package));
+
+      // Add required Google Forms parameters
+      body.append('fvv', '1');
+      body.append('partialResponse', '[null,null,"-1"]');
 
       try {
         await fetch(cfg.enquiryAction, {
@@ -45,28 +49,32 @@
       const ids = cfg.travelPlanEntryIds;
       const body = new FormData();
       
-      if (data.name) body.append(ids.name, data.name);
-      if (data.email) body.append(ids.email, data.email);
-      if (data.phone) body.append(ids.phone, data.phone);
-      if (data.from_location) body.append(ids.fromLocation, data.from_location);
+      if (data.name) body.append(ids.name, String(data.name));
+      if (data.email) body.append(ids.email, String(data.email));
+      if (data.phone) body.append(ids.phone, String(data.phone));
+      if (data.from_location) body.append(ids.fromLocation, String(data.from_location));
       
       // Handle multiple destinations
       if (data.destinations) {
-        const destStr = Array.isArray(data.destinations) ? data.destinations.join(", ") : data.destinations;
+        const destStr = Array.isArray(data.destinations) ? data.destinations.join(", ") : String(data.destinations);
         body.append(ids.destinations, destStr);
       }
       
-      if (data.start_date) body.append(ids.startDate, data.start_date);
-      if (data.end_date) body.append(ids.endDate, data.end_date);
+      if (data.start_date) body.append(ids.startDate, String(data.start_date));
+      if (data.end_date) body.append(ids.endDate, String(data.end_date));
       
       // Handle transport modes (checkboxes)
       if (data.transport_mode) {
-        const modesStr = Array.isArray(data.transport_mode) ? data.transport_mode.join(", ") : data.transport_mode;
+        const modesStr = Array.isArray(data.transport_mode) ? data.transport_mode.join(", ") : String(data.transport_mode);
         body.append(ids.transportMode, modesStr);
       }
       
-      if (data.budget) body.append(ids.budget, data.budget);
-      if (data.notes) body.append(ids.notes, data.notes);
+      if (data.budget) body.append(ids.budget, String(data.budget));
+      if (data.notes) body.append(ids.notes, String(data.notes));
+
+      // Add required Google Forms parameters
+      body.append('fvv', '1');
+      body.append('partialResponse', '[null,null,"-1"]');
 
       try {
         await fetch(cfg.travelPlanAction, {
@@ -96,30 +104,34 @@
       const body = new FormData();
       
       // Section 1: Basic Info
-      if (data.name) body.append(ids.name, data.name);
-      if (data.email) body.append(ids.email, data.email);
-      if (data.phone) body.append(ids.phone, data.phone);
+      if (data.name) body.append(ids.name, String(data.name));
+      if (data.email) body.append(ids.email, String(data.email));
+      if (data.phone) body.append(ids.phone, String(data.phone));
       
       // Section 2: Trip Segment (first segment - or combine all segments)
-      if (data.source) body.append(ids.source, data.source);
-      if (data.destination) body.append(ids.destination, data.destination);
-      if (data.travelers) body.append(ids.travelers, data.travelers);
-      if (data.notes) body.append(ids.notes, data.notes);
+      if (data.source) body.append(ids.source, String(data.source));
+      if (data.destination) body.append(ids.destination, String(data.destination));
+      if (data.travelers) body.append(ids.travelers, String(data.travelers));
+      if (data.notes) body.append(ids.notes, String(data.notes));
       
       // Date fields (year/month/day)
       if (data.date) {
         const dateObj = new Date(data.date);
-        body.append(ids.date_year, dateObj.getFullYear());
-        body.append(ids.date_month, dateObj.getMonth() + 1);
-        body.append(ids.date_day, dateObj.getDate());
+        body.append(ids.date_year, String(dateObj.getFullYear()));
+        body.append(ids.date_month, String(dateObj.getMonth() + 1));
+        body.append(ids.date_day, String(dateObj.getDate()));
       }
       
-      if (data.mode) body.append(ids.mode, data.mode);
+      if (data.mode) body.append(ids.mode, String(data.mode));
       
       // Section 3: Summary
-      if (data.total_travelers) body.append(ids.totalTravelers, data.total_travelers);
-      if (data.budget_per_person) body.append(ids.budgetPerPerson, data.budget_per_person);
-      if (data.overall_notes) body.append(ids.overallNotes, data.overall_notes);
+      if (data.total_travelers) body.append(ids.totalTravelers, String(data.total_travelers));
+      if (data.budget_per_person) body.append(ids.budgetPerPerson, String(data.budget_per_person));
+      if (data.overall_notes) body.append(ids.overallNotes, String(data.overall_notes));
+
+      // Add required Google Forms parameters
+      body.append('fvv', '1');
+      body.append('partialResponse', '[null,null,"-1"]');
 
       try {
         await fetch(cfg.transportBookingAction, {
@@ -143,6 +155,15 @@
   function bindEnquiryForm(formEl, extraData) {
     if (!formEl) return;
     
+    // Add autocomplete attributes to prevent browser warnings
+    const nameField = formEl.querySelector('input[name="name"]');
+    const emailField = formEl.querySelector('input[name="email"]');
+    const phoneField = formEl.querySelector('input[name="phone"]');
+    
+    if (nameField) nameField.setAttribute('autocomplete', 'name');
+    if (emailField) emailField.setAttribute('autocomplete', 'email');
+    if (phoneField) phoneField.setAttribute('autocomplete', 'tel');
+    
     formEl.addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = formEl.querySelector('[type="submit"]');
@@ -156,7 +177,8 @@
         travel_date: fd.get("travel_date") || "",
         num_travelers: fd.get("num_travelers") || "",
         message: fd.get("message") || "",
-        ...(extraData || {}),
+        // Ensure extraData values are strings, not objects
+        ...(extraData && typeof extraData === 'object' ? Object.fromEntries(Object.entries(extraData).map(([k, v]) => [k, String(v)])) : {}),
       };
 
       if (!data.name || !data.email) {
@@ -190,6 +212,15 @@
    */
   function bindTravelPlanForm(formEl) {
     if (!formEl) return;
+    
+    // Add autocomplete attributes
+    const nameField = formEl.querySelector('input[name="name"]');
+    const emailField = formEl.querySelector('input[name="email"]');
+    const phoneField = formEl.querySelector('input[name="phone"]');
+    
+    if (nameField) nameField.setAttribute('autocomplete', 'name');
+    if (emailField) emailField.setAttribute('autocomplete', 'email');
+    if (phoneField) phoneField.setAttribute('autocomplete', 'tel');
     
     formEl.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -243,6 +274,15 @@
    */
   function bindTransportBookingForm(formEl) {
     if (!formEl) return;
+    
+    // Add autocomplete attributes
+    const nameField = formEl.querySelector('input[name="name"]');
+    const emailField = formEl.querySelector('input[name="email"]');
+    const phoneField = formEl.querySelector('input[name="phone"]');
+    
+    if (nameField) nameField.setAttribute('autocomplete', 'name');
+    if (emailField) emailField.setAttribute('autocomplete', 'email');
+    if (phoneField) phoneField.setAttribute('autocomplete', 'tel');
     
     formEl.addEventListener("submit", async (e) => {
       e.preventDefault();
