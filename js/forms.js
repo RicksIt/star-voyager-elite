@@ -11,17 +11,26 @@
       const ids = cfg.enquiryEntryIds;
       const body = new FormData();
       
-      if (data.name) body.append(ids.name, String(data.name));
-      if (data.email) body.append(ids.email, String(data.email));
-      if (data.phone) body.append(ids.phone, String(data.phone));
-      if (data.message) body.append(ids.message, String(data.message));
-      if (data.travel_date) body.append(ids.travelDate, String(data.travel_date));
-      if (data.num_travelers) body.append(ids.travelers, String(data.num_travelers));
-      if (data.package) body.append(ids.package, String(data.package));
+      // Always append the same set of fields (use empty string if missing)
+      // This prevents accidental re-ordering or missing fields when some values are undefined
+      body.append(ids.name, String(data.name || ""));
+      body.append(ids.email, String(data.email || ""));
+      body.append(ids.phone, String(data.phone || ""));
+      body.append(ids.message, String(data.message || ""));
+      body.append(ids.travelDate, String(data.travel_date || ""));
+      body.append(ids.travelers, String(data.num_travelers || ""));
+      body.append(ids.package, String(data.package || ""));
 
       // Add required Google Forms parameters
       body.append('fvv', '1');
       body.append('partialResponse', '[null,null,"-1"]');
+
+      // Debug: log what will be sent (developers can remove this when stable)
+      try {
+        for (const [k, v] of body.entries()) {
+          console.debug('Enquiry->', k, v);
+        }
+      } catch (e) { /* noop in older browsers */ }
 
       try {
         await fetch(cfg.enquiryAction, {
@@ -117,9 +126,11 @@
       // Date fields (year/month/day)
       if (data.date) {
         const dateObj = new Date(data.date);
-        body.append(ids.date_year, String(dateObj.getFullYear()));
-        body.append(ids.date_month, String(dateObj.getMonth() + 1));
-        body.append(ids.date_day, String(dateObj.getDate()));
+        if (!isNaN(dateObj)) {
+          body.append(ids.date_year, String(dateObj.getFullYear()));
+          body.append(ids.date_month, String(dateObj.getMonth() + 1));
+          body.append(ids.date_day, String(dateObj.getDate()));
+        }
       }
       
       if (data.mode) body.append(ids.mode, String(data.mode));
@@ -169,17 +180,37 @@
       const btn = formEl.querySelector('[type="submit"]');
       if (btn) btn.disabled = true;
 
+      // Build a sanitized data object (don't rely on element ordering)
       const fd = new FormData(formEl);
-      const data = {
+      const rawData = {
         name: fd.get("name"),
         email: fd.get("email"),
-        phone: fd.get("phone") || "",
-        travel_date: fd.get("travel_date") || "",
-        num_travelers: fd.get("num_travelers") || "",
-        message: fd.get("message") || "",
-        // Ensure extraData values are strings, not objects
-        ...(extraData && typeof extraData === 'object' ? Object.fromEntries(Object.entries(extraData).map(([k, v]) => [k, String(v)])) : {}),
+        phone: fd.get("phone"),
+        travel_date: fd.get("travel_date"),
+        num_travelers: fd.get("num_travelers"),
+        message: fd.get("message"),
       };
+
+      // Normalize values to strings and trim
+      const data = {
+        name: rawData.name ? String(rawData.name).trim() : "",
+        email: rawData.email ? String(rawData.email).trim() : "",
+        phone: rawData.phone ? String(rawData.phone).trim() : "",
+        travel_date: rawData.travel_date ? String(rawData.travel_date).trim() : "",
+        num_travelers: rawData.num_travelers ? String(rawData.num_travelers).trim() : "",
+        message: rawData.message ? String(rawData.message).trim() : "",
+      };
+
+      // Merge extraData (ensure primitive strings). Allow caller to pass logical keys like 'package'.
+      if (extraData && typeof extraData === 'object') {
+        for (const [k, v] of Object.entries(extraData)) {
+          try {
+            data[k] = v == null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+          } catch (e) {
+            data[k] = '';
+          }
+        }
+      }
 
       if (!data.name || !data.email) {
         VE.showToast("Please fill in your name and email.", true);
