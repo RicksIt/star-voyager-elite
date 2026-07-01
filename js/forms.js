@@ -16,9 +16,9 @@
       body.append(ids.name, String(data.name || ""));
       body.append(ids.email, String(data.email || ""));
       body.append(ids.phone, String(data.phone || ""));
-      body.append(ids.message, String(data.message || ""));
       body.append(ids.travelDate, String(data.travel_date || ""));
       body.append(ids.travelers, String(data.num_travelers || ""));
+      body.append(ids.message, String(data.message || ""));
       body.append(ids.package, String(data.package || ""));
 
       // Add required Google Forms parameters
