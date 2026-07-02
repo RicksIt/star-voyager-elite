@@ -40,10 +40,10 @@ window.VE_CONFIG = {
       name: "entry.1131269551",
       email: "entry.1729620236",
       phone: "entry.771633320",
-      message: "entry.1478205533",
-      travelDate: "entry.241453670",
-      travelers: "entry.1572531549",
-      package: "entry.1366720409",
+      travelers: "entry.1478205533",      // Number of Travellers
+      package: "entry.1572531549",        // Package
+      message: "entry.241453670",         // Message
+      travelDate: "entry.1366720409",     // Travel Date
     },
 
     // Custom Trip Plan Form Entry IDs
